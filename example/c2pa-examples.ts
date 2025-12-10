@@ -82,19 +82,19 @@ async function validateImageC2PA () {
     )
     const blob = await response.blob()
 
-    // Validate the C2PA manifest
-    const validation = await validateC2PAFromImage(blob, c2pa)
+    try {
+        // Validate the C2PA manifest
+        const validation = await validateC2PAFromImage(blob, c2pa)
 
-    debug('Validation result:', validation.valid ? 'VALID' : 'INVALID')
+        debug('Validation result:', validation.valid ? 'VALID' : 'INVALID')
 
-    if (validation.manifest) {
-        debug('\nManifest title:', validation.manifest.title)
-        debug('Claim generator:', validation.manifest.claim_generator)
-        debug('Number of assertions:', validation.manifest.assertions?.length || 0)
-    }
-
-    if (validation.errors.length > 0) {
-        debug('\nValidation errors:', validation.errors)
+        if (validation.manifest) {
+            debug('\nManifest title:', validation.manifest.title)
+            debug('Claim generator:', validation.manifest.claim_generator)
+            debug('Number of assertions:', validation.manifest.assertions?.length || 0)
+        }
+    } catch (error) {
+        debug('\nValidation error:', error instanceof Error ? error.message : String(error))
     }
 }
 
@@ -183,8 +183,12 @@ async function completeWorkflow () {
     )
     const imageBlob = await imageResponse.blob()
 
-    const imageValidation = await validateC2PAFromImage(imageBlob, c2pa)
-    debug('✓ Featured image C2PA:', imageValidation.valid ? 'VALID' : 'INVALID')
+    try {
+        const imageValidation = await validateC2PAFromImage(imageBlob, c2pa)
+        debug('✓ Featured image C2PA:', imageValidation.valid ? 'VALID' : 'INVALID')
+    } catch (error) {
+        debug('✗ Featured image validation failed:', error instanceof Error ? error.message : String(error))
+    }
 
     // Step 3: Combine both
     debug('\nStep 3: Complete blog post with verified assets')
@@ -211,8 +215,7 @@ async function readAndDisplay () {
     // Create reader
     const reader = await c2pa.reader.fromBlob(blob.type, blob)
     if (!reader) throw new Error('not reader')
-    const manifestStore = await reader.manifestStore()
-    const activeManifest = manifestStore?.activeManifest
+    const activeManifest = await reader.activeManifest()
 
     if (activeManifest) {
         debug('Image C2PA Data:')
@@ -238,6 +241,151 @@ async function readAndDisplay () {
 }
 
 // ============================================================================
+// Example 6: Add C2PA metadata to an image (Node.js)
+// ============================================================================
+
+/**
+ * Example: Embed C2PA metadata into an image using the Builder API
+ *
+ * This example demonstrates:
+ * - Fetching an image file
+ * - Creating a C2PA manifest with the Builder API
+ * - Signing and embedding metadata into the image
+ * - Saving the result
+ *
+ * Note: This requires a signing certificate. For testing purposes,
+ * we'll show the structure even without full signing capability.
+ */
+async function embedC2PAInImage () {
+    debug('\nExample 6: Embed C2PA Metadata in Image\n')
+
+    const c2pa = await createC2pa({ wasmSrc })
+
+    // Step 1: Fetch the test image
+    debug('Step 1: Fetching test image...')
+    const imageResponse = await fetch(
+        'https://spec.c2pa.org/public-testfiles/image/jpeg/adobe-20220124-C.jpg'
+    )
+    const imageBlob = await imageResponse.blob()
+    debug('✓ Image fetched:', imageBlob.size, 'bytes')
+
+    // Step 2: Create a builder
+    debug('\nStep 2: Creating C2PA builder...')
+    const builder = await c2pa.builder.new()
+
+    // Step 3: Add actions (what was done to the image)
+    debug('Step 3: Adding action metadata...')
+    await builder.addAction({
+        action: 'c2pa.edited',
+        when: new Date().toISOString(),
+        softwareAgent: {
+            name: 'webts-example',
+            version: '1.0.0',
+        },
+        parameters: {
+            description: 'Added C2PA provenance metadata',
+        },
+    })
+
+    // Step 4: Set thumbnail (optional)
+    debug('Step 4: Setting thumbnail...')
+    await builder.setThumbnailFromBlob('image/jpeg', imageBlob)
+
+    // Step 5: Get the manifest definition to see what we've built
+    const definition = await builder.getDefinition()
+    debug('\nManifest Definition:')
+    debug('- Title:', definition.title || 'Untitled')
+    debug('- Claim Generator:', definition.claim_generator)
+    debug('- Actions:', definition.assertions?.find(a => a.label === 'c2pa.actions'))
+
+    debug('\n⚠️  Note: To fully sign the image, you need:')
+    debug('   1. A valid X.509 certificate for signing')
+    debug('   2. A Signer implementation with your private key')
+    debug('   3. Call builder.sign(signer, "image/jpeg", imageBlob)')
+    debug('\nExample signer implementation needed:')
+    debug(`
+const signer = {
+    alg: 'es256',
+    async sign(data, reserveSize) {
+        // Sign the data with your certificate's private key
+        // This would use crypto libraries like node:crypto or @peculiar/webcrypto
+        return signedData;
+    },
+    async reserveSize() {
+        return 10000; // Size to reserve for signature
+    }
+};
+
+const signedImageBytes = await builder.sign(signer, 'image/jpeg', imageBlob);
+    `)
+
+    // Clean up
+    await builder.free()
+}
+
+// ============================================================================
+// Example 7: Create C2PA manifest for Node.js file operations
+// ============================================================================
+
+/**
+ * Node.js example: Read image from filesystem, add C2PA, write to new file
+ *
+ * This shows the pattern for Node.js scripts that work with the filesystem.
+ * Requires Node.js with fetch support (Node 18+) or undici for older versions.
+ */
+async function nodeFileExample () {
+    debug('\nExample 7: Node.js File System Pattern\n')
+
+    debug(`
+// In a Node.js script with file system access:
+
+import { readFile, writeFile } from 'fs/promises';
+import { createC2pa } from '@contentauth/c2pa-web';
+import wasmSrc from '@contentauth/c2pa-web/resources/c2pa.wasm?url';
+
+async function addC2PAToImageFile(inputPath, outputPath) {
+    // Read the image file
+    const imageBuffer = await readFile(inputPath);
+    const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' });
+
+    // Initialize c2pa
+    const c2pa = await createC2pa({ wasmSrc });
+
+    // Create builder and add metadata
+    const builder = await c2pa.builder.new();
+
+    await builder.addAction({
+        action: 'c2pa.edited',
+        when: new Date().toISOString(),
+        softwareAgent: { name: 'my-app', version: '1.0' }
+    });
+
+    // Sign the image (requires certificate)
+    const signer = createMySigner(); // Your implementation
+    const signedBytes = await builder.sign(signer, 'image/jpeg', imageBlob);
+
+    // Write to output file
+    await writeFile(outputPath, Buffer.from(signedBytes));
+
+    await builder.free();
+    console.log('✓ C2PA metadata added to', outputPath);
+}
+
+// Usage:
+await addC2PAToImageFile(
+    './example/adobe-20220124-C.jpg',
+    './output/signed-image.jpg'
+);
+    `)
+
+    debug('\n📝 Key points for Node.js usage:')
+    debug('   • Use fs/promises for file I/O')
+    debug('   • Convert Buffers to Blobs for c2pa-web API')
+    debug('   • Ensure WASM file is accessible')
+    debug('   • Implement proper certificate-based signing')
+}
+
+// ============================================================================
 // Run examples
 // ============================================================================
 
@@ -248,6 +396,8 @@ export async function runExamples () {
         await embedInHTML()
         await completeWorkflow()
         await readAndDisplay()
+        await embedC2PAInImage()
+        await nodeFileExample()
     } catch (error) {
         debug('Error running examples:', error)
     }
@@ -259,4 +409,6 @@ export {
     embedInHTML,
     completeWorkflow,
     readAndDisplay,
+    embedC2PAInImage,
+    nodeFileExample,
 }

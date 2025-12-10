@@ -39,7 +39,9 @@
     "postversion": "git push --follow-tags && npm publish",
     "prepublishOnly": "npm run build"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@contentauth/c2pa-web": "^0.5.3"
+  },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.2",
     "@substrate-system/debug": "^0.9.24",

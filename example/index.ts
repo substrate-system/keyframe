@@ -1,8 +1,12 @@
 import { type FunctionComponent, render } from 'preact'
 import { html } from 'htm/preact'
-import { example } from '../src/index.js'
 
-example()
+if (import.meta.env.DEV || import.meta.env.MODE === 'staging') {
+    localStorage.setItem('DEBUG', 'webts,webts:*')
+} else {
+    localStorage.removeItem('DEBUG')
+    localStorage.removeItem('debug')
+}
 
 const Example:FunctionComponent<unknown> = function () {
     return html`<div>hello</div>`

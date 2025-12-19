@@ -710,11 +710,11 @@ export async function signContentC2PA (
  * ```
  */
 export async function validateC2PAFromImage (
-    imageBlob: Blob,
-    c2paInstance: C2paSdk
-): Promise<{ valid: boolean; manifest: Manifest }> {
+    imageBlob:Blob,
+    c2pa:C2paSdk
+):Promise<{ valid:boolean; manifest:Manifest }> {
     // Create reader from blob
-    const reader = await c2paInstance.reader.fromBlob(
+    const reader = await c2pa.reader.fromBlob(
         imageBlob.type,
         imageBlob
     )
@@ -729,11 +729,11 @@ export async function validateC2PAFromImage (
     // Clean up
     await reader.free()
 
+    // Basic validation - manifest exists
     if (!manifest) {
         throw new Error('No manifest found in image')
     }
 
-    // Basic validation - manifest exists
     // More sophisticated validation would check:
     // - Signature validity
     // - Certificate chain

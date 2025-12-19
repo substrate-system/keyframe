@@ -18,13 +18,9 @@ import {
 import { version } from '../../package.json'
 
 /**
- * Node.js-specific file operations for keyframe
- *
- * This module adds file I/O capabilities on top of the browser-compatible
- * core functions from src/index.ts
+ * Node-specific file operations for keyframe
  */
 
-// Re-export core types and functions for convenience
 export type {
     Keypair,
     FileSignature,

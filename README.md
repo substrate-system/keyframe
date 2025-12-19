@@ -7,11 +7,10 @@
 [![Common Changelog](https://nichoth.github.io/badge/common-changelog.svg)](./CHANGELOG.md)
 [![install size](https://flat.badgen.net/packagephobia/install/@substrate-system/keyframe)](https://packagephobia.com/result?p=@substrate-system/keyframe)
 [![gzip size](https://flat.badgen.net/bundlephobia/minzip/@substrate-system/keyframe)](https://bundlephobia.com/package/@substrate-system/keyframe)
-[![dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen.svg?style=flat-square)](package.json)
 [![license](https://img.shields.io/badge/license-Big_Time-blue?style=flat-square)](LICENSE)
 
 Create verifiable, timestamped signatures using RFC 3161 Time-Stamp Authorities
-and C2PA manifests.
+or blockchains.
 
 
 <details><summary><h2>Contents</h2></summary>

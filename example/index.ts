@@ -2,7 +2,7 @@ import { type FunctionComponent, render } from 'preact'
 import { html } from 'htm/preact'
 
 if (import.meta.env.DEV || import.meta.env.MODE === 'staging') {
-    localStorage.setItem('DEBUG', 'webts,webts:*')
+    localStorage.setItem('DEBUG', 'keyframe,keyframe:*')
 } else {
     localStorage.removeItem('DEBUG')
     localStorage.removeItem('debug')

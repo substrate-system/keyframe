@@ -12,6 +12,7 @@ import {
 import path from 'path'
 import { unlink } from 'fs/promises'
 
+// assume this is run by piping into Node from the root project folder
 const TEST_IMAGE_PATH = path.join(process.cwd(), 'test',
     '20190814_102301.jpg')
 const OUTPUT_IMAGE_PATH = path.join(process.cwd(), 'test', 'test-output.jpg')
